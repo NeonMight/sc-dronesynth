@@ -1,12 +1,15 @@
 //Audio components
 s.boot; //boot the audio device (same as Server.local.boot)
 
+s.scope; //opens audio scope
+s.plotTree;
 (
 SynthDef.new(\sine,
 	{
-		arg freq = 440, lfreq=10, cut=1000;
+		arg freq = 440, lfreq=10, partial=1, cut=1000, fmfreq=440, fmpartial=2.4, index=3;
 		var lfosc = SinOsc.kr(lfreq,0,1,0);
-		var sig = SinOsc.ar(freq*lfosc,0,1,0); //ar means audio signal
+		var fmosc = SinOsc.ar(fmfreq*fmpartial,0,fmfreq*index*LFNoise1.kr(0.2),0); //modulator wave
+		var sig = SinOsc.ar(((freq*partial)+fmosc)*lfosc,0,1,0); //ar means audio signal
 		sig = LPF.ar(sig,cut,1,0); //simple lowpass filter
 		Out.ar(0, sig); //left speaker
 		Out.ar(1, sig); //right speaker
@@ -25,6 +28,8 @@ SynthDef.new(\saw,
 }).add;
 )
 x = Synth.new(\sine); //instantiate new synth based on synth def
+x.set(\fmfreq, 1000);
+x.set(\fmpartial,2.7);
 x.free; //free synth to stop audio
 
 s.quit; //stop audio device
@@ -77,6 +82,16 @@ coff.action =
 }
 )
 
+(
+var fmk = Knob(a,Rect(260,20,35,35));
+fmk.action =
+{
+	arg obj;
+	var val = obj.value.linexp(0,1,1,440).postln;
+	~x.set(\fmfreq,val);
+}
+)
+
 var freqlabel = StaticText(a,Rect(80,60,60,20));
 freqlabel.string = "Freq";
 
@@ -85,5 +100,8 @@ lfolabel.string = "LFO";
 
 var cutofflabel = StaticText(a,Rect(200,60,60,20));
 cutofflabel.string = "Cutoff";
+
+var fmlabel = StaticText(a,Rect(260,60,60,20));
+fmlabel.string = "FM";
 
 a.close;
